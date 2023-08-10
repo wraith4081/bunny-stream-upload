@@ -1,7 +1,7 @@
 # bunny-stream-upload
 ## Install
 ```sh
-npm i yargs chalk@4.1.2 axios
+npm i yargs chalk@4.1.2 axios @types/yargs
 ```
 ## Usage:
 ```
