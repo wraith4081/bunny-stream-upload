@@ -57,7 +57,7 @@ async function main() {
     
         const guid = createResult.data;
     
-        const uploadResult = await uploadVideo(Number(library), guid, key, content);
+        const uploadResult = await uploadVideo(Number(library), guid, key, Buffer.from(content, 'utf8'););
     
         if (!uploadResult.success) {
             throw new Error('Could not upload video');
