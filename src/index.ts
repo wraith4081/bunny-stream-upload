@@ -43,7 +43,7 @@ if (!fs.existsSync(filePath)) {
 
 console.log(`Reading file: ${filePath}`);
 
-fs.readFile(filePath, 'utf8', async (err: any, content: any) => {
+async function main (err: any, content: any) {
     if (err) return console.log(err);
     
     const createResult = await createVideo(Number(library), title, collection, key);
@@ -62,5 +62,7 @@ fs.readFile(filePath, 'utf8', async (err: any, content: any) => {
 
     console.log(`Video uploaded: ${guid}`);
     
-})
+}
+
+fs.readFile(filePath, 'utf8', main)
 
