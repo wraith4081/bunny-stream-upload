@@ -27,7 +27,6 @@ async function main() {
         if (!library || Number.isNaN(Number(library))) {
             throw new Error('Please specify a valid library id');
         }
-
         if (!collection || !/[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}/.test(collection)) {
             throw new Error('Please specify a valid collection id');
         }
@@ -45,33 +44,25 @@ async function main() {
         }
 
         console.log(`Reading file: ${filePath}`);
-        const readStream = fs.createReadStream(filePath, { encoding: 'utf8' });
-        let content = '';
 
-        readStream.on('data', (chunk: string) => {
-            content += chunk;
-        });
+        let uploadResult: any; // Declare uploadResult and guid before the callback
+        let guid: string;
 
-        readStream.on('end', async () => {
-            let uploadResult: any; // Declare uploadResult and guid before the callback
-            let guid: string;
+        const createResult = await createVideo(Number(library), title, collection, key);
 
-            const createResult = await createVideo(Number(library), title, collection, key);
+        if (!createResult.success) {
+            throw new Error('Could not create video');
+        }
 
-            if (!createResult.success) {
-                throw new Error('Could not create video');
-            }
+        guid = createResult.data;
 
-            guid = createResult.data;
+        uploadResult = await uploadVideo(Number(library), guid, key, filePath);
 
-            uploadResult = await uploadVideo(Number(library), guid, key, Buffer.from(content, 'utf8'));
+        if (!uploadResult.success) {
+            throw new Error('Could not upload video');
+        }
 
-            if (!uploadResult.success) {
-                throw new Error('Could not upload video');
-            }
-
-            console.log(`Video uploaded: ${guid}`);
-        });
+        console.log(`Video uploaded: ${guid}`);
     } catch (e) {
         console.log(e);
     }
