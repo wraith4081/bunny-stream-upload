@@ -1,5 +1,6 @@
 import axios, { AxiosResponse } from 'axios';
 import chalk from 'chalk';
+import fs from 'node:fs';
 
 export function createVideo(libraryId: number, title: string, collectionId: string, AccessKey: string): Promise<
     { success: true, data: string } | { success: false, data: null }
@@ -38,54 +39,50 @@ export function createVideo(libraryId: number, title: string, collectionId: stri
         });
 }
 
-export function uploadVideo(libraryId: number, guid: string, AccessKey: string, file: Buffer): Promise<
-    { success: boolean, data: null }
-> {
-    const url = `https://video.bunnycdn.com/library/${libraryId}/videos/${guid}`;
+export async function uploadVideo(
+  libraryId: number,
+  guid: string,
+  AccessKey: string,
+  filePath: string
+): Promise<{ success: boolean; data: null }> {
+  const url = `https://video.bunnycdn.com/library/${libraryId}/videos/${guid}`;
 
-    const uploadStartTime = Date.now();
+  const uploadStartTime = Date.now();
 
-    const config = {
-        headers: {
-            'accept': 'application/json',
-            'AccessKey': AccessKey,
-            'Content-Type': 'application/octet-stream'
-        },
-        onUploadProgress: (progressEvent: any) => {
-            const percentComplete = (progressEvent.loaded / progressEvent.total) * 100;
-            const progressBar = createProgressBar(percentComplete);
-            console.log(`Upload progress: ${progressBar}`);
+  const config = {
+    headers: {
+      accept: 'application/json',
+      AccessKey: AccessKey,
+      'Content-Type': 'application/octet-stream',
+    },
+    onUploadProgress: (progressEvent: any) => {
+      const percentComplete = (progressEvent.loaded / progressEvent.total) * 100;
+      const progressBar = createProgressBar(percentComplete);
+      console.log(`Upload progress: ${progressBar}`);
 
-            const remainingSize = progressEvent.total - progressEvent.loaded;
-            const uploadSpeed = progressEvent.loaded / (progressEvent.timeStamp - uploadStartTime);
-            const estimatedUploadTime = remainingSize / uploadSpeed;
-            console.log(`Estimated upload time: ${estimatedUploadTime ?? 'N/A'} seconds`);
-        }
+      const remainingSize = progressEvent.total - progressEvent.loaded;
+      const uploadSpeed = progressEvent.loaded / (progressEvent.timeStamp - uploadStartTime);
+      const estimatedUploadTime = remainingSize / uploadSpeed;
+      console.log(`Estimated upload time: ${estimatedUploadTime || 'N/A'} seconds`);
+    },
+    maxBodyLength: Infinity, // Set the maximum request body length to Infinity
+  };
+
+  const fileStream = fs.createReadStream(filePath);
+
+  try {
+    await axios.put(url, fileStream, config);
+    return {
+      success: true,
+      data: null,
     };
-
-    return axios.put(url, file, config)
-        .then((response: AxiosResponse) => {
-            const success = response?.data?.success;
-
-            if (success) {
-                return {
-                    success: true,
-                    data: null
-                };
-            }
-
-            return {
-                success: false,
-                data: null
-            };
-        })
-        .catch((e) => {
-            console.log(e);
-            return {
-                success: false,
-                data: null
-            };
-        });
+  } catch (e) {
+    console.error(e);
+    return {
+      success: false,
+      data: null,
+    };
+  }
 }
 
 function createProgressBar(percentComplete: number): string {
