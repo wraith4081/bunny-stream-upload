@@ -1,7 +1,7 @@
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 
-import fs from 'node:fs';
+import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createVideo, uploadVideo } from './helpers';
 
@@ -14,55 +14,58 @@ const collection = argv.collection as string;
 
 const title = argv.title as string;
 
-if (!file) {
-    throw new Error('Please specify a file');
-}
+async function main() {
+    try {
+        
+        if (!file) {
+            throw new Error('Please specify a file');
+        }
+        
+        if (!key || !/[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}-[a-z0-9]{4}-[a-z0-9]{4}/.test(key)) {
+            throw new Error('Please specify a valid key');
+        }
+        
+        if (!library || Number.isNaN(Number(library))) {
+            throw new Error('Please specify a valid library id');
+        }
+        
+        if (!collection || !/[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}/.test(collection)) {
+            throw new Error('Please specify a valid collection id');
+        }
+        
+        if (!title) {
+            throw new Error('Please specify a title');
+        }
+        
+        const filePath = path.resolve(process.cwd(), file);
+        
+        try {
+          await fs.access(filePath); // Check if the file exists
+        } catch (e) {
+          throw new Error('File does not exist');
+        }
 
-if (!key || !/[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}-[a-z0-9]{4}-[a-z0-9]{4}/.test(key)) {
-    throw new Error('Please specify a valid key');
-}
+        console.log(`Reading file: ${filePath}`);
 
-if (!library || Number.isNaN(Number(library))) {
-    throw new Error('Please specify a valid library id');
-}
-
-if (!collection || !/[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}/.test(collection)) {
-    throw new Error('Please specify a valid collection id');
-}
-
-if (!title) {
-    throw new Error('Please specify a title');
-}
-
-
-const filePath = path.resolve(process.cwd(), file);
-
-if (!fs.existsSync(filePath)) {
-    throw new Error('File does not exist');
-}
-
-console.log(`Reading file: ${filePath}`);
-
-async function main (err: any, content: any) {
-    if (err) return console.log(err);
+        const content = await fs.readFile(filePath, 'utf8');
+        
+        const createResult = await createVideo(Number(library), title, collection, key);
     
-    const createResult = await createVideo(Number(library), title, collection, key);
-
-    if (!createResult.success) {
-        throw new Error('Could not create video');
-    }
-
-    const guid = createResult.data;
-
-    const uploadResult = await uploadVideo(Number(library), guid, key, content);
-
-    if (!uploadResult.success) {
-        throw new Error('Could not upload video');
-    }
-
-    console.log(`Video uploaded: ${guid}`);
+        if (!createResult.success) {
+            throw new Error('Could not create video');
+        }
     
+        const guid = createResult.data;
+    
+        const uploadResult = await uploadVideo(Number(library), guid, key, content);
+    
+        if (!uploadResult.success) {
+            throw new Error('Could not upload video');
+        }
+    
+        console.log(`Video uploaded: ${guid}`);
+    } catch(e) {
+        console.log(e);
+    }
 }
-
-fs.readFile(filePath, 'utf8', main)
 
