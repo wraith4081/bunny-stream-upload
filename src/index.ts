@@ -43,26 +43,39 @@ if (!fs.existsSync(filePath)) {
 
 console.log(`Reading file: ${filePath}`);
 
-const content = fs.readFileSync(filePath);
-
-async function main() {
-
-    const createResult = await createVideo(Number(library), title, collection, key);
-
-    if (!createResult.success) {
-        throw new Error('Could not create video');
-    }
-
-    const guid = createResult.data;
-
-    const uploadResult = await uploadVideo(Number(library), guid, key, content);
-
-    if (!uploadResult.success) {
-        throw new Error('Could not upload video');
-    }
-
-    console.log(`Video uploaded: ${guid}`);
-
+async function readFileAsync(filePath: string) {
+  try {
+    const data = await fs.readFile(filePath, 'utf8');
+    return data;
+  } catch (error) {
+    console.error('Error reading file:', error);
+  }
 }
 
-main();
+readFileAsync(filePath).then((content: string) => {
+    
+    async function main() {
+    
+        const createResult = await createVideo(Number(library), title, collection, key);
+    
+        if (!createResult.success) {
+            throw new Error('Could not create video');
+        }
+    
+        const guid = createResult.data;
+    
+        const uploadResult = await uploadVideo(Number(library), guid, key, content);
+    
+        if (!uploadResult.success) {
+            throw new Error('Could not upload video');
+        }
+    
+        console.log(`Video uploaded: ${guid}`);
+    
+    }
+    
+    main();
+}).catch((e: any) => {
+    console.log(e);
+});
+
